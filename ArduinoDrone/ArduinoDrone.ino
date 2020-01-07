@@ -1,15 +1,23 @@
-/*
- Name:		ArduinoDrone.ino
- Created:	1/7/2020 9:27:01 AM
- Author:	Lucas
-*/
 
-// the setup function runs once when you press reset or power the board
+#include "controller.h"
+#include "motors.h"
+
+
 void setup() {
+	
 
+	Serial.begin(9600);
+	Controller::initialize();
+	Motors::initialize();
 }
-
-// the loop function runs over and over again until power down or reset
 void loop() {
-  
+	/*ESC1.writeMicroseconds(1200);
+	ESC2.writeMicroseconds(1200);
+	ESC3.writeMicroseconds(1200);
+	ESC4.writeMicroseconds(1200);*/
+
+	Serial.println(Controller::get_axis(Controller::Pins::PITCH));
+	Motors::set_throttle_percent(1);
+
+	delay(500);
 }
