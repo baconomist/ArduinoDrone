@@ -18,7 +18,6 @@
     <None Include="Nathan_Code.ino" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="__vm\.ArduinoDrone.vsarduino.h" />
     <ClInclude Include="controller.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -28,12 +27,16 @@
     <ClInclude Include="utils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="__vm\.ArduinoDrone.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="motors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

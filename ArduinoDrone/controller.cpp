@@ -14,6 +14,16 @@ namespace Controller
 	// @warning may take a long time if there is no RC connected to the drone
 	float get_axis(int axis_pin)
 	{
-		return map(pulseIn(axis_pin, HIGH), 984, 2003, 1000, 2000);
+		return map(pulseIn(axis_pin, HIGH), RC_MIN, RC_MAX, NORMALIZED_RC_MIN, NORMALIZED_RC_MAX);
 	}
+
+	// @warning may take a long time if there is no RC connected to the drone
+	float get_axis_percent(int axis_pin) 
+	{
+		if(axis_pin == Pins::THROTTLE)
+			return map(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, 0, 100);
+		else
+			return map(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, -100, 100);
+	}
+
 }

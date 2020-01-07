@@ -17,7 +17,13 @@ namespace Controller
 		const int YAW = A3;
 	}
 
+	const int RC_MIN = 984;
+	const int RC_MAX = 2003;
+	const int NORMALIZED_RC_MIN = 1000;
+	const int NORMALIZED_RC_MAX = 2000;
+
 	void initialize();
 
 	float get_axis(int axis_pin);
+	float get_axis_percent(int pin);
 }
