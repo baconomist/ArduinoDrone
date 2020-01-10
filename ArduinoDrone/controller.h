@@ -15,6 +15,7 @@ namespace Controller
 		const int PITCH = A1;
 		const int THROTTLE = A2;
 		const int YAW = A3;
+		const int CH_5 = 3;
 	}
 
 	const int RC_MIN = 984;
@@ -26,4 +27,6 @@ namespace Controller
 
 	float get_axis(int axis_pin);
 	float get_axis_percent(int pin);
+
+	bool rc_connected();
 }

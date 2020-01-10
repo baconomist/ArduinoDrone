@@ -18,10 +18,14 @@ namespace Motors
 
 	void initialize();
 
-	void update_motors();
-
 	void set_throttle_percent(float percent);
 	void set_roll_percent(float percent);
 	void set_pitch_percent(float percent);
 	void set_yaw_percent(float percent);
+
+	void disarm();
+	void arm();
+
+	void _update_motors();
+	void _calibrate_escs();
 }

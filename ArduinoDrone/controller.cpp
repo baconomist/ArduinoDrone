@@ -9,6 +9,7 @@ namespace Controller
 		pinMode(Pins::PITCH, INPUT);
 		pinMode(Pins::THROTTLE, INPUT);
 		pinMode(Pins::YAW, INPUT);
+		pinMode(Pins::CH_5, INPUT);
 	}
 
 	// @warning may take a long time if there is no RC connected to the drone
@@ -24,6 +25,11 @@ namespace Controller
 			return map(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, 0, 100);
 		else
 			return map(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, -100, 100);
+	}
+
+	bool rc_connected()
+	{
+		return analogRead(Pins::CH_5) > 100;
 	}
 
 }
