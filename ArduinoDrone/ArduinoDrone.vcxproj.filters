@@ -45,5 +45,8 @@
     <ClCompile Include="orientation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="motion_control.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

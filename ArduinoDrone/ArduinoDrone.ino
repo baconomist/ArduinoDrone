@@ -47,6 +47,8 @@ void loop()
 	Motors::set_roll_percent(Controller::get_axis_percent(Controller::Pins::ROLL));
 	Motors::set_yaw_percent(Controller::get_axis_percent(Controller::Pins::YAW));
 
+	Serial.println(Controller::get_axis_percent(Controller::Pins::THROTTLE));
+
 	//Serial.println(Controller::get_axis_percent(Controller::Pins::THROTTLE));
 	//Serial.println(Controller::get_axis(Controller::Pins::CH_5));
 	/*Motors::set_throttle_percent(10);
