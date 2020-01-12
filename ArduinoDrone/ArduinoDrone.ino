@@ -1,16 +1,19 @@
+#include "globals.h"
 
 #include "controller.h"
 #include "motors.h"
 #include "orientation.h"
 #include "utils.h"
 
+bool failsafe = false;
+
 bool armed = false;
 const int armDelay = 1000;
-float armTimer = 0;
+unsigned long armTimer = 0;
 
 void setup()
 {
-	Serial.begin(9600);
+	Serial.begin(115200);
 
 	Orientation::initialize();
 	Orientation::calibrate();
@@ -26,8 +29,11 @@ void loop()
 	//Serial.println(Orientation::get_axis_degrees(Orientation::Axis::ROLL));
 	//Serial.println(Orientation::get_axis_degrees(Orientation::Axis::PITCH));
 	
-	if (Controller::get_axis(Controller::Pins::CH_5) < 1200)
+	if (Controller::get_axis(Controller::Pins::CH_5) < 1200 || failsafe)
 	{
+		if (failsafe)
+			Serial.println("Failsafe triggered! Please reboot.");
+
 		Motors::disarm();
 		armed = false;
 

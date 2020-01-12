@@ -73,7 +73,7 @@ namespace Motors
 	void _update_motors() 
 	{
 		float k = 0.75f;
-		float kP = 0.5f;
+		float kP = 0.2f;
 		float thr_kP = 0.25f;
 
 		float yaw_cw = clamp(0.5f * current_yaw, -current_throttle * k, current_throttle * k);

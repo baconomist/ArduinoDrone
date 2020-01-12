@@ -1,5 +1,5 @@
+#include "globals.h"
 #include "orientation.h"
-
 
 // I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h files
 // for both classes must be in the include path of your project
@@ -40,6 +40,7 @@ namespace Orientation
 
 	const int CALIB_TIME = 1000;
 	float ypr_offsets[3] = { 0, 0, 0 };
+	unsigned long fifo_loop_start = 0;
 
 	// MPU control/status vars
 	bool dmpReady = false;  // set true if DMP init was successful
@@ -182,13 +183,16 @@ namespace Orientation
 
 		// reset interrupt flag and get INT_STATUS byte
 		mpuInterrupt = false;
-		mpuIntStatus = mpu.getIntStatus();
+		// Using MPU status causes the arduino to freeze if accel is shaken around
+		// https://forum.arduino.cc/index.php?topic=408851.0
+		//mpuIntStatus = mpu.getIntStatus();
 
 		// get current FIFO count
 		fifoCount = mpu.getFIFOCount();
 
 		// check for overflow (this should never happen unless our code is too slow)
-		if ((mpuIntStatus & 0x10) || fifoCount == 1024)
+		//if ((mpuIntStatus & 0x10) || fifoCount == 1024)
+		if(fifoCount == 1024)
 		{
 			// reset so we can continue cleanly
 			mpu.resetFIFO();
@@ -196,10 +200,21 @@ namespace Orientation
 
 			// otherwise, check for DMP data ready interrupt (this should happen frequently)
 		}
-		else if (mpuIntStatus & 0x02)
+		//else if (mpuIntStatus & 0x02)
+		else
 		{
+			fifo_loop_start = millis();
 			// wait for correct available data length, should be a VERY short wait
-			while (fifoCount < packetSize) fifoCount = mpu.getFIFOCount();
+			while (fifoCount < packetSize) { 
+				fifoCount = mpu.getFIFOCount();
+
+				if (millis() - fifo_loop_start >= 500)
+				{
+					Serial.println("FIFO LOOP TOOK TOO LONG! Is the accel disconnected? Disarming...");
+					failsafe = true;
+					return;
+				}
+			}
 
 			// read a packet from FIFO
 			mpu.getFIFOBytes(fifoBuffer, packetSize);
@@ -213,6 +228,8 @@ namespace Orientation
 			mpu.dmpGetGravity(&gravity, &q);
 			mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 		}
+
+		Serial.println(millis());
 	}
 
 	float get_axis_degrees(int axis)
