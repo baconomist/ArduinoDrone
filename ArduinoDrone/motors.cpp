@@ -54,6 +54,11 @@ namespace Motors
 	Mix Motor3Mix;
 	Mix Motor4Mix;
 
+	float motor_1_thr = 0;
+	float motor_2_thr = 0;
+	float motor_3_thr = 0;
+	float motor_4_thr = 0;
+
 	void initialize()
 	{
 		Serial.println("Initializing ESCs...");
@@ -69,6 +74,7 @@ namespace Motors
 	{
 		float k = 0.75f;
 		float kP = 0.5f;
+		float thr_kP = 0.25f;
 
 		float yaw_cw = clamp(0.5f * current_yaw, -current_throttle * k, current_throttle * k);
 		float yaw_ccw = -yaw_cw;
@@ -92,10 +98,21 @@ namespace Motors
 		Motor3Mix.set_mix(pitch_back, roll_left, yaw_ccw);
 		Motor4Mix.set_mix(pitch_forward, roll_left, yaw_cw);
 		
-		ESC1.writeMicroseconds(map_float(clamp(current_throttle + Motor1Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
-		ESC2.writeMicroseconds(map_float(clamp(current_throttle + Motor2Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
-		ESC3.writeMicroseconds(map_float(clamp(current_throttle + Motor3Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
-		ESC4.writeMicroseconds(map_float(clamp(current_throttle + Motor4Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
+		float motor_1_thr_next = clamp(current_throttle + Motor1Mix.get_mixed(), 0, 100);
+		float motor_2_thr_next = clamp(current_throttle + Motor2Mix.get_mixed(), 0, 100);
+		float motor_3_thr_next = clamp(current_throttle + Motor3Mix.get_mixed(), 0, 100);
+		float motor_4_thr_next = clamp(current_throttle + Motor4Mix.get_mixed(), 0, 100);
+
+		// PID throttle smoothing; gets rid of jittery motor movements
+		motor_1_thr += MotionControl::p_controller(motor_1_thr, motor_1_thr_next, thr_kP);
+		motor_2_thr += MotionControl::p_controller(motor_2_thr, motor_2_thr_next, thr_kP);
+		motor_3_thr += MotionControl::p_controller(motor_3_thr, motor_3_thr_next, thr_kP);
+		motor_4_thr += MotionControl::p_controller(motor_4_thr, motor_4_thr_next, thr_kP);
+
+		ESC1.writeMicroseconds(map_float(motor_1_thr, 0, 100, THR_MIN, THR_MAX));
+		ESC2.writeMicroseconds(map_float(motor_2_thr, 0, 100, THR_MIN, THR_MAX));
+		ESC3.writeMicroseconds(map_float(motor_3_thr, 0, 100, THR_MIN, THR_MAX));
+		ESC4.writeMicroseconds(map_float(motor_4_thr, 0, 100, THR_MIN, THR_MAX));
 	}
 
 	void set_throttle_percent(float percent) 
