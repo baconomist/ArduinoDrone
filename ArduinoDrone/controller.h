@@ -28,5 +28,6 @@ namespace Controller
 	float get_axis(int axis_pin);
 	float get_axis_percent(int pin);
 
+	// Not possible with the fs-i6B receiver
 	bool rc_connected();
 }

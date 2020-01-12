@@ -1,7 +1,8 @@
 #include "controller.h"
+#include "utils.h"
 
 
-namespace Controller 
+namespace Controller
 {
 	void initialize()
 	{
@@ -19,17 +20,11 @@ namespace Controller
 	}
 
 	// @warning may take a long time if there is no RC connected to the drone
-	float get_axis_percent(int axis_pin) 
+	float get_axis_percent(int axis_pin)
 	{
-		if(axis_pin == Pins::THROTTLE)
-			return map(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, 0, 100);
+		if (axis_pin == Pins::THROTTLE)
+			return map_float(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, 0, 100);
 		else
-			return map(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, -100, 100);
+			return map_float(get_axis(axis_pin), NORMALIZED_RC_MIN, NORMALIZED_RC_MAX, -100, 100);
 	}
-
-	bool rc_connected()
-	{
-		return analogRead(Pins::CH_5) > 100;
-	}
-
 }

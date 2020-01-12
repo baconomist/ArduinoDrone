@@ -25,7 +25,7 @@ MPU6050 mpu;
 FIFO overflow means that the mainloop is too slow!
 This is caused by a buffer overflow. There needs to be constant querying to the accel to prevent this and thus no using "delay()"!
 **/
-namespace Orientation 
+namespace Orientation
 {
 	/**
 	(Betaflight defaults)
@@ -37,6 +37,9 @@ namespace Orientation
 	 /     \
 	O 3     O 1
 	**/
+
+	const int CALIB_TIME = 1000;
+	float ypr_offsets[3] = { 0, 0, 0 };
 
 	// MPU control/status vars
 	bool dmpReady = false;  // set true if DMP init was successful
@@ -60,7 +63,7 @@ namespace Orientation
 	// ================================================================
 
 	volatile bool mpuInterrupt = false;     // indicates whether MPU interrupt pin has gone high
-	void dmpDataReady() 
+	void dmpDataReady()
 	{
 		mpuInterrupt = true;
 	}
@@ -69,15 +72,15 @@ namespace Orientation
 	// ===                      INITIAL SETUP                       ===
 	// ================================================================
 
-	void initialize() 
+	void initialize()
 	{
 		// join I2C bus (I2Cdev library doesn't do this automatically)
-		#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-			Wire.begin();
-			TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)
-		#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-			Fastwire::setup(400, true);
-		#endif
+#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
+		Wire.begin();
+		TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)
+#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
+		Fastwire::setup(400, true);
+#endif
 
 		// NOTE: 8MHz or slower host processors, like the Teensy @ 3.3v or Ardunio
 		// Pro Mini running at 3.3v, cannot handle this baud rate reliably due to
@@ -104,7 +107,7 @@ namespace Orientation
 		mpu.setZAccelOffset(1788); // 1688 factory default for my test chip
 
 		// make sure it worked (returns 0 if so)
-		if (devStatus == 0) 
+		if (devStatus == 0)
 		{
 			// turn on the DMP, now that it's ready
 			Serial.println(F("Enabling DMP..."));
@@ -122,7 +125,7 @@ namespace Orientation
 			// get expected DMP packet size for later comparison
 			packetSize = mpu.dmpGetFIFOPacketSize();
 		}
-		else 
+		else
 		{
 			// ERROR!
 			// 1 = initial memory load failed
@@ -134,7 +137,30 @@ namespace Orientation
 		}
 	}
 
-	void update() 
+	void calibrate()
+	{
+		Serial.print("Orientation calibrating...(Taking ");
+		Serial.print(CALIB_TIME);
+		Serial.println("ms)");
+
+		float start = millis();
+		float total_ypr[3] = { 0, 0, 0 };
+		int samples = 0;
+		while (millis() - start < CALIB_TIME)
+		{
+			update();
+			total_ypr[Axis::YAW] += ypr[Axis::YAW];
+			total_ypr[Axis::PITCH] += ypr[Axis::PITCH];
+			total_ypr[Axis::ROLL] += ypr[Axis::ROLL];
+			samples++;
+		}
+		
+		ypr_offsets[Axis::YAW] = total_ypr[Axis::YAW] / (float)samples * 180 / M_PI;
+		ypr_offsets[Axis::PITCH] = total_ypr[Axis::PITCH] / (float)samples * 180 / M_PI;
+		ypr_offsets[Axis::ROLL] = total_ypr[Axis::ROLL] / (float)samples * 180 / M_PI;
+	}
+
+	void update()
 	{
 		// if programming failed, don't try to do anything
 		if (!dmpReady) return;
@@ -166,7 +192,7 @@ namespace Orientation
 		{
 			// reset so we can continue cleanly
 			mpu.resetFIFO();
-			Serial.println(F("FIFO overflow!"));
+			Serial.println(F("FIFO overflow! Turn on RC to possibly fix this."));
 
 			// otherwise, check for DMP data ready interrupt (this should happen frequently)
 		}
@@ -189,13 +215,11 @@ namespace Orientation
 		}
 	}
 
-	void calibrate() {}
-
-	float get_axis_degrees(int axis) 
+	float get_axis_degrees(int axis)
 	{
-		if(axis == Axis::PITCH)
-			return -ypr[axis] * 180 / M_PI;
+		if (axis == Axis::PITCH || axis == Axis::ROLL)
+			return -ypr[axis] * 180 / M_PI - ypr_offsets[axis];
 		else
-			return ypr[axis] * 180 / M_PI;
+			return ypr[axis] * 180 / M_PI - ypr_offsets[axis];
 	}
 }

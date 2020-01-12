@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include "utils.h"
+#include "orientation.h"
+#include "motion_control.h"
 
 /**
 (Betaflight defaults)
@@ -23,10 +25,34 @@ float current_yaw = 0;
 
 namespace Motors
 {
+	struct Mix
+	{
+		float pitch = 0.0f;
+		float roll = 0.0f;
+		float yaw = 0.0f;
+
+		void set_mix(float pitch, float roll, float yaw) 
+		{
+			this->pitch = pitch;
+			this->roll = roll;
+			this->yaw = yaw;
+		}
+
+		float get_mixed()
+		{
+			return pitch + roll + yaw;
+		}
+	};
+
 	Servo ESC1;
 	Servo ESC2;
 	Servo ESC3;
 	Servo ESC4;
+
+	Mix Motor1Mix;
+	Mix Motor2Mix;
+	Mix Motor3Mix;
+	Mix Motor4Mix;
 
 	void initialize()
 	{
@@ -42,20 +68,34 @@ namespace Motors
 	void _update_motors() 
 	{
 		float k = 0.75f;
+		float kP = 0.5f;
 
-		float pitch_forward = clamp(1 / 2 * -current_pitch, -current_throttle * k, current_throttle * k);
-		float pitch_back = -pitch_forward;
-
-		float roll_right = clamp(1 / 2 * -current_roll, -current_throttle * k, current_throttle * k);
-		float roll_left = -roll_right;
-
-		float yaw_cw = clamp(1 / 2 * current_yaw, -current_throttle * k, current_throttle * k);
+		float yaw_cw = clamp(0.5f * current_yaw, -current_throttle * k, current_throttle * k);
 		float yaw_ccw = -yaw_cw;
 
-		ESC1.writeMicroseconds(map(current_throttle + pitch_back + roll_right + yaw_cw, 0, 100, THR_MIN, THR_MAX));
-		ESC2.writeMicroseconds(map(current_throttle + pitch_forward + roll_right + yaw_ccw, 0, 100, THR_MIN, THR_MAX));
-		ESC3.writeMicroseconds(map(current_throttle + pitch_back + roll_left + yaw_ccw, 0, 100, THR_MIN, THR_MAX));
-		ESC4.writeMicroseconds(map(current_throttle + pitch_forward + roll_left + yaw_cw, 0, 100, THR_MIN, THR_MAX));
+		float pitch_forward = clamp(0.5f * -current_pitch, -current_throttle * k, current_throttle * k);
+		float pitch_back = -pitch_forward;
+
+		float roll_right = clamp(0.5f * -current_roll, -current_throttle * k, current_throttle * k);
+		float roll_left = -roll_right;
+
+		float p_pitch = MotionControl::p_controller(Orientation::get_axis_degrees(Orientation::Axis::PITCH), 0, kP);
+		float p_roll = MotionControl::p_controller(Orientation::get_axis_degrees(Orientation::Axis::ROLL), 0, kP);
+
+		pitch_forward -= p_pitch;
+		pitch_back += p_pitch;
+		roll_right -= p_roll;
+		roll_left += p_roll;
+
+		Motor1Mix.set_mix(pitch_back, roll_right, yaw_cw);
+		Motor2Mix.set_mix(pitch_forward, roll_right, yaw_ccw);
+		Motor3Mix.set_mix(pitch_back, roll_left, yaw_ccw);
+		Motor4Mix.set_mix(pitch_forward, roll_left, yaw_cw);
+		
+		ESC1.writeMicroseconds(map_float(clamp(current_throttle + Motor1Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
+		ESC2.writeMicroseconds(map_float(clamp(current_throttle + Motor2Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
+		ESC3.writeMicroseconds(map_float(clamp(current_throttle + Motor3Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
+		ESC4.writeMicroseconds(map_float(clamp(current_throttle + Motor4Mix.get_mixed(), 0, 100), 0, 100, THR_MIN, THR_MAX));
 	}
 
 	void set_throttle_percent(float percent) 
